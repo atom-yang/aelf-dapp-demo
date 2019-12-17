@@ -49,9 +49,6 @@ class Login extends PureComponent {
     const res = await bridge.account();
     const { chains, accounts } = res.data;
     const { address, publicKey } = accounts[0];
-    console.log({
-      publicKey
-    })
     localStorage.setItem("address", address);
     localStorage.setItem("publicKey", publicKey);
     // localStorage.setItem('chains', JSON.stringify(chains));

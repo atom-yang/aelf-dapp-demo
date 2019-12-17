@@ -10,8 +10,6 @@ import React, { PureComponent } from "react";
 import { withRouter } from "react-router-dom";
 import { List, InputItem, Button, Toast, Modal } from "antd-mobile";
 import { createForm } from "rc-form";
-
-// todo: why is the less didn't work?
 import { SYMBOL, TOKEN_DECIMAL } from "@constants";
 import "./index.css";
 import TokenContract from "@api/token";
@@ -39,7 +37,7 @@ class Transfer extends PureComponent {
       isModalShow: false,
       errors: [],
       transferAmount: null,
-      recieverAddress: null,
+      receiverAddress: null,
       memos: null
     };
 
@@ -54,12 +52,15 @@ class Transfer extends PureComponent {
   }
 
   jumpToTransferResult() {
-    const { history } = this.props;
-    const { transferAmount, recieverAddress, memo } = this.state;
+    const { history, form } = this.props;
+    const { getFieldValue } = form;
+    const transferAmount = +getFieldValue('money');
+    const memo = getFieldValue('memo');
+    const receiverAddress = getFieldValue('address');
 
     const payload = {
-      to: recieverAddress,
-      symbol: "ELF",
+      to: receiverAddress,
+      symbol: SYMBOL,
       amount: transferAmount * TOKEN_DECIMAL,
       memo
     };
@@ -69,25 +70,17 @@ class Transfer extends PureComponent {
       .transfer(payload)
       .then(res => {
         console.log("transfer", res);
-
-        // todo: Is there other nice way to write the params?
+        if (+res.code !== 0) {
+          throw res;
+        }
         history.push(`/transfer-result/${res.data.TransactionId}`);
       })
       .catch(err => {
-        // if (res.code !== 0) {
-        //   this.setState({
-        //     errors: res.error,
-        //     isModalShow: true
-        //   });
-        //   // todo: find a toast that can should multi-line
-        //   // Toast.fail(
-        //   //   `There are some errors:
-        //   //     ${errors}`,
-        //   //   3
-        //   // );
-        //   return;
-        // }
-        console.log("transfer", err);
+        Toast.fail(
+          'There are some errors',
+          3
+        );
+        console.error("transfer", err);
       });
   }
 
@@ -95,10 +88,7 @@ class Transfer extends PureComponent {
     const { getFieldProps } = this.props.form;
     const {
       isModalShow,
-      errors,
-      transferAmount,
-      recieverAddress,
-      memo
+      errors
     } = this.state;
 
     return (
@@ -108,67 +98,33 @@ class Transfer extends PureComponent {
         <h3 className="title">Transfer</h3>
         <List className="transfer-form">
           <InputItem
-            {...getFieldProps("money3")}
-            type="digit"
+            {...getFieldProps("money")}
+            type="money"
             labelNumber={LABEL_NUM}
             placeholder="input the transfer amount"
             clear
             moneyKeyboardAlign="left"
-            value={transferAmount}
-            onChange={transferAmount => {
-              this.setState({
-                transferAmount: +transferAmount
-              });
-            }}
           >
             Amount
           </InputItem>
           <InputItem
+            {...getFieldProps("address")}
             type="text"
             labelNumber={LABEL_NUM}
-            placeholder="input the reciever address"
+            placeholder="input the receiver address"
             clear
-            onBlur={v => {
-              console.log("onBlur", v);
-            }}
-            value={recieverAddress}
-            onChange={recieverAddress => {
-              this.setState({
-                recieverAddress
-              });
-            }}
           >
-            Reciever Address
+            Receiver Address
           </InputItem>
-          <p className="reciever-address-tip tip-color">
+          <p className="receiver-address-tip tip-color">
             (Only support main chain transfer) &nbsp;&nbsp;&nbsp;
           </p>
           <InputItem
-            // {...getFieldProps('money2', {
-            //   normalize: (v, prev) => {
-            //     if (v && !/^(([1-9]\d*)|0)(\.\d{0,2}?)?$/.test(v)) {
-            //       if (v === '.') {
-            //         return '0.';
-            //       }
-            //       return prev;
-            //     }
-            //     return v;
-            //   }
-            // })}
+            {...getFieldProps("memo")}
             type="text"
             placeholder="input the memo"
             labelNumber={LABEL_NUM}
-            ref={el => (this.inputRef = el)}
-            onVirtualKeyboardConfirm={v =>
-              console.log("onVirtualKeyboardConfirm:", v)
-            }
             clear
-            value={memo}
-            onChange={memo => {
-              this.setState({
-                memo
-              });
-            }}
           >
             Memo(Optional)
           </InputItem>

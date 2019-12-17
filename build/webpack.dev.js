@@ -63,9 +63,7 @@ const devConfig = {
     port: 9527,
     compress: true,
     hot: false,
-    open: true, // Auto open page after run yarn dev
-    openPage: 'index.html', // Auto open page after run yarn dev
-    inline: true,  // Auto open page after run yarn dev
+    inline: false,
     historyApiFallback: true,
     proxy: proxyServer,
     before(app) {

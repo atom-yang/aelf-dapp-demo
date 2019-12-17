@@ -11,6 +11,7 @@ import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Toast } from 'antd-mobile';
+// import AElfBridge from '../../../bridge';
 import AElfBridge from 'aelf-bridge';
 
 import { fetchContractAdds } from '@utils/contracts';

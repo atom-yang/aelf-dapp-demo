@@ -27,7 +27,6 @@ import { SYMBOL, TOKEN_DECIMAL } from '@constants';
 import './index.css';
 
 const { Item } = List;
-const { Brief } = Item;
 
 const override = css`
   display: block;
@@ -38,9 +37,9 @@ function getFormItems() {
   const {
     amount,
     // minerFee,
-    recieverAddress,
+    receiverAddress,
     senderAddress,
-    momo,
+    memo,
     txId,
     blockHeight
   } = this.state;
@@ -57,8 +56,8 @@ function getFormItems() {
     //   isCopyable: false
     // },
     {
-      title: 'reciever address',
-      value: recieverAddress,
+      title: 'receiver address',
+      value: receiverAddress,
       isCopyable: true
     },
     {
@@ -67,8 +66,8 @@ function getFormItems() {
       isCopyable: true
     },
     {
-      title: 'momo',
-      value: momo,
+      title: 'memo',
+      value: memo,
       isCopyable: false
     },
     {
@@ -92,9 +91,9 @@ class TransferResult extends PureComponent {
     this.state = {
       amount: null,
       minerFee: null,
-      recieverAddress: null,
+      receiverAddress: null,
       senderAddress: null,
-      momo: null,
+      memo: null,
       txId: null,
       blockHeight: null,
       loading: true,
@@ -103,7 +102,7 @@ class TransferResult extends PureComponent {
       errors: []
     };
 
-    this.jumpToLogin = this.jumpToLogin.bind(this);
+    this.jump = this.jump.bind(this);
     this.onCloseModal = this.onCloseModal.bind(this);
   }
 
@@ -145,18 +144,17 @@ class TransferResult extends PureComponent {
           console.log({
             res
           });
-          if (res.code !== 0) {
+          if (+res.code !== 0) {
             this.setState({
               errors: res.error,
               isModalShow: true,
               loading: false
             });
             // todo: find a toast that can should multi-line
-            // Toast.fail(
-            //   `There are some errors:
-            //     ${errors}`,
-            //   3
-            // );
+            Toast.fail(
+              'There are some errors',
+              3
+            );
             return;
           }
 
@@ -171,7 +169,7 @@ class TransferResult extends PureComponent {
           this.setState({
             amount: +amount / TOKEN_DECIMAL,
             // minerFee,
-            recieverAddress: to,
+            receiverAddress: to,
             senderAddress,
             memo,
             txId: TransactionId,
@@ -179,8 +177,6 @@ class TransferResult extends PureComponent {
             status,
             loading: false
           });
-
-          console.log("I'm success");
         })
         .catch(err =>
           console.log({
@@ -190,9 +186,9 @@ class TransferResult extends PureComponent {
     }, 4000);
   }
 
-  jumpToLogin() {
+  jump() {
     const { history } = this.props;
-    history.push('/login');
+    history.push('/personal-center');
   }
 
   // todo: the modal's code is repeating
@@ -232,8 +228,8 @@ class TransferResult extends PureComponent {
               </Card.Body>
             )}
           </Card>
-          <Button type='primary' onClick={this.jumpToLogin}>
-            Back to page Login
+          <Button type='primary' onClick={this.jump}>
+            Back
           </Button>
           <WhiteSpace size='lg' />
         </WingBlank>

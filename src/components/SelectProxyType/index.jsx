@@ -10,6 +10,7 @@ import React, { Component } from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Modal } from 'antd-mobile';
+// import AElfBridge from '../../../bridge';
 import AElfBridge from 'aelf-bridge';
 
 import { setBridge } from '../../redux/actions/common';
