@@ -11,6 +11,10 @@ import { withRouter } from "react-router-dom";
 import { List, InputItem, Button, Toast, Modal } from "antd-mobile";
 import { createForm } from "rc-form";
 import { SYMBOL, TOKEN_DECIMAL } from "@constants";
+import {
+  errorModal,
+  handleResponse
+} from '../../../../utils/error';
 import "./index.css";
 import TokenContract from "@api/token";
 
@@ -34,62 +38,52 @@ class Transfer extends PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      isModalShow: false,
-      errors: [],
-      transferAmount: null,
-      receiverAddress: null,
-      memos: null
+      loading: false
     };
-
     this.jumpToTransferResult = this.jumpToTransferResult.bind(this);
-    this.onCloseModal = this.onCloseModal.bind(this);
   }
 
-  onCloseModal() {
-    this.setState({
-      isModalShow: false
-    });
-  }
-
-  jumpToTransferResult() {
+  async jumpToTransferResult() {
     const { history, form } = this.props;
-    const { getFieldValue } = form;
-    const transferAmount = +getFieldValue('money');
-    const memo = getFieldValue('memo');
-    const receiverAddress = getFieldValue('address');
-
-    const payload = {
-      to: receiverAddress,
-      symbol: SYMBOL,
-      amount: transferAmount * TOKEN_DECIMAL,
-      memo
-    };
-    const tokenContract = new TokenContract();
-
-    tokenContract
-      .transfer(payload)
-      .then(res => {
-        console.log("transfer", res);
-        if (+res.code !== 0) {
-          throw res;
-        }
-        history.push(`/transfer-result/${res.data.TransactionId}`);
-      })
-      .catch(err => {
-        Toast.fail(
-          'There are some errors',
-          3
-        );
-        console.error("transfer", err);
+    console.log(form);
+    const {
+      validateFields
+    } = form;
+    const fields = ['money', 'address', 'memo'];
+    try {
+      this.setState({
+        loading: true
       });
+      const {
+        money: amount,
+        memo = '',
+        address: to
+      } = await validateFields(fields);
+      const payload = {
+        to,
+        symbol: SYMBOL,
+        amount: parseFloat(amount) * TOKEN_DECIMAL,
+        memo
+      };
+      const tokenContract = new TokenContract();
+      const res = handleResponse(await tokenContract.transfer(payload));
+      this.setState({
+        loading: false
+      });
+      history.push(`/transfer-result/${res.data.TransactionId}`);
+    } catch (e) {
+      errorModal(e);
+      console.error("transfer", e);
+      this.setState({
+        loading: false
+      });
+    }
   }
 
   render() {
-    const { getFieldProps } = this.props.form;
     const {
-      isModalShow,
-      errors
-    } = this.state;
+      getFieldDecorator
+    } = this.props.form;
 
     return (
       <section
@@ -97,67 +91,71 @@ class Transfer extends PureComponent {
       >
         <h3 className="title">Transfer</h3>
         <List className="transfer-form">
-          <InputItem
-            {...getFieldProps("money")}
-            type="money"
-            labelNumber={LABEL_NUM}
-            placeholder="input the transfer amount"
-            clear
-            moneyKeyboardAlign="left"
-          >
-            Amount
-          </InputItem>
-          <InputItem
-            {...getFieldProps("address")}
-            type="text"
-            labelNumber={LABEL_NUM}
-            placeholder="input the receiver address"
-            clear
-          >
-            Receiver Address
-          </InputItem>
+          {
+            getFieldDecorator('money', {
+              rules: [
+                {
+                  required: true,
+                  message: 'Please enter the amount'
+                }
+              ]
+            })(
+              <InputItem
+                type="money"
+                labelNumber={LABEL_NUM}
+                placeholder="input the transfer amount"
+                clear
+                moneyKeyboardAlign="left"
+              >
+                Amount
+              </InputItem>
+            )
+          }
+          {
+            getFieldDecorator('address', {
+              rules: [
+                {
+                  required: true,
+                  message: 'Please enter the address'
+                }
+              ]
+            })(
+              <InputItem
+                type="text"
+                labelNumber={LABEL_NUM}
+                placeholder="input the receiver address"
+                clear
+              >
+                Receiver Address
+              </InputItem>
+            )
+          }
           <p className="receiver-address-tip tip-color">
-            (Only support main chain transfer) &nbsp;&nbsp;&nbsp;
+            (Only support transfer on main chain) &nbsp;&nbsp;&nbsp;
           </p>
-          <InputItem
-            {...getFieldProps("memo")}
-            type="text"
-            placeholder="input the memo"
-            labelNumber={LABEL_NUM}
-            clear
-          >
-            Memo(Optional)
-          </InputItem>
+          {
+            getFieldDecorator('memo', {})(
+              <InputItem
+                type="text"
+                placeholder="input the memo"
+                labelNumber={LABEL_NUM}
+                clear
+              >
+                Memo(Optional)
+              </InputItem>
+            )
+          }
         </List>
         <div className="transfer-btn-container">
-          <Button type="primary" inline onClick={this.jumpToTransferResult}>
+          <Button
+            type="primary"
+            inline
+            onClick={this.jumpToTransferResult}
+            loading={this.state.loading}
+          >
             Next
           </Button>
         </div>
-        <Modal
-          visible={isModalShow}
-          transparent
-          maskClosable={false}
-          onClose={this.onCloseModal}
-          title="Failed"
-          footer={[
-            {
-              text: "Ok",
-              onPress: () => {
-                console.log("ok");
-                this.onCloseModal();
-              }
-            }
-          ]}
-        >
-          <p>There are some error:</p>
-          {Array.isArray(errors) &&
-            errors.map(item => (
-              <p key={item.errorCode}>
-                {item.errorCode}: {item.errorMsg}
-              </p>
-            ))}
-        </Modal>
       </section>
     );
   }

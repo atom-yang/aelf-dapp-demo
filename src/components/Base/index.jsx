@@ -11,10 +11,9 @@ import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Toast } from 'antd-mobile';
-// import AElfBridge from '../../../bridge';
-import AElfBridge from 'aelf-bridge';
+import AElfBridge from '../../../bridge';
+// import AElfBridge from 'aelf-bridge';
 
-import { fetchContractAdds } from '@utils/contracts';
 import { setBridge } from '../../redux/actions/common';
 import SelectProxyType from '@components/SelectProxyType';
 
@@ -35,9 +34,16 @@ export class Base extends Component {
   async componentDidUpdate(prevProps, prevState) {
     const { bridge } = this.props;
     if (bridge !== prevProps.bridge) {
-      const res = await bridge.connect();
-      if (res === false) {
-        Toast.fail('Connect ');
+      try {
+        console.log('base');
+        const res = await bridge.connect();
+        console.log('res', res);
+        if (res === false) {
+          Toast.fail('Connect fail');
+        }
+      } catch (e) {
+        console.error(e);
+        Toast.fail('Connect fail');
       }
     }
   }

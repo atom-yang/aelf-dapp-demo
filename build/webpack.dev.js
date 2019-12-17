@@ -46,8 +46,7 @@ const proxyServer = devMode === 'local' ? {} : proxy.map(v => {
 
 const devConfig = {
   mode: 'development',
-  // devtool: 'source-map',
-  // devtool: 'eval',
+  devtool: 'cheap-module-source-map',
   output: {
     filename: '[name].js'
   },
@@ -60,7 +59,7 @@ const devConfig = {
     disableHostCheck: true,
     contentBase: OUTPUT_PATH,
     host: '0.0.0.0',
-    port: 9527,
+    port: 9520,
     compress: true,
     hot: false,
     inline: false,

@@ -44,9 +44,17 @@ const privateKey =
 
 const wallet = AElf.wallet.getWalletByPrivateKey(privateKey);
 
-export const fetchContractAdds = async chains => {
+export const fetchContractAdds = async (chains = []) => {
+  if (localStorage.getItem('contractAdds')) {
+    return;
+  }
+  let mainChainUrl = chains.filter(v => v.isMainChain === true);
+  if (mainChainUrl.length === 0) {
+    throw new Error('There is no main chain url');
+  }
+  mainChainUrl = mainChainUrl[0].url;
   const result = {};
-  const aelf = new AElf(new AElf.providers.HttpProvider(chains[0]));
+  const aelf = new AElf(new AElf.providers.HttpProvider(mainChainUrl));
   const { GenesisContractAddress } = await aelf.chain.getChainStatus();
   console.log('GenesisContractAddress', GenesisContractAddress);
   const genesisContract = await aelf.chain.contractAt(

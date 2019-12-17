@@ -11,10 +11,10 @@ import React, { PureComponent } from "react";
 import { withRouter } from "react-router-dom";
 import { compose, bindActionCreators } from "redux";
 import { connect } from "react-redux";
-import { Button, Toast, Modal } from "antd-mobile";
-
+import { Button, Modal } from "antd-mobile";
 import "./index.less";
 import { fetchContractAdds } from "@utils/contracts";
+import { errorModal, handleResponse } from '../../utils/error';
 import TokenContract from "@api/token";
 import { setBalance } from "@redux/actions/common";
 import { SYMBOL, TOKEN_DECIMAL } from "@constants";
@@ -46,38 +46,30 @@ class Login extends PureComponent {
     this.setState({
       loading: true
     });
-    const res = await bridge.account();
-    const { chains, accounts } = res.data;
-    const { address, publicKey } = accounts[0];
-    localStorage.setItem("address", address);
-    localStorage.setItem("publicKey", publicKey);
-    // localStorage.setItem('chains', JSON.stringify(chains));
-    const chainAdds = chains.map(item => item.url);
-    fetchContractAdds(chainAdds)
-      .then(async () => {
-        const tokenContract = new TokenContract();
-
-        const res = await tokenContract.fetchBalance({
-          symbol: SYMBOL,
-          owner: address
-        });
-
-        console.log("fetchBalance", res);
-
-        setBalance(res.data.balance / TOKEN_DECIMAL);
-      })
-      .then(() => {
-        this.setState({
-          loading: false
-        });
+    try {
+      const res = handleResponse(await bridge.account());
+      const { chains, accounts } = res.data;
+      const { address, publicKey } = accounts[0];
+      localStorage.setItem("address", address);
+      localStorage.setItem("publicKey", publicKey);
+      await fetchContractAdds(chains);
+      const tokenContract = new TokenContract();
+      const balance = handleResponse(await tokenContract.fetchBalance({
+        symbol: SYMBOL,
+        owner: address
+      }));
+      setBalance(balance.data.balance / TOKEN_DECIMAL);
+      setTimeout(() => {
         history.push(route);
-      })
-      .catch(err => {
-        console.log("fetchContractAdds", err);
-        this.setState({
-          loading: false
-        });
       });
+    } catch (e) {
+      errorModal(e);
+      console.error(e);
+    } finally {
+      this.setState({
+        loading: false
+      });
+    }
   }
 
   // todo: disable the login button

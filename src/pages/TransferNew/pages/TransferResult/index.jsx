@@ -17,13 +17,15 @@ import {
   List,
   Icon,
   Button,
-  Toast,
-  Modal
+  Toast
 } from 'antd-mobile';
 import { PacmanLoader } from 'react-spinners';
 import { css } from '@emotion/core';
-
 import { SYMBOL, TOKEN_DECIMAL } from '@constants';
+import {
+  errorModal,
+  handleResponse
+} from '../../../../utils/error';
 import './index.css';
 
 const { Item } = List;
@@ -97,23 +99,14 @@ class TransferResult extends PureComponent {
       txId: null,
       blockHeight: null,
       loading: true,
-      status: null,
-      isModalShow: false,
-      errors: []
+      status: null
     };
 
     this.jump = this.jump.bind(this);
-    this.onCloseModal = this.onCloseModal.bind(this);
   }
 
   componentDidMount() {
     this.fetchTransactionResult();
-  }
-
-  onCloseModal() {
-    this.setState({
-      isModalShow: false
-    });
   }
 
   fetchTransactionResult() {
@@ -122,16 +115,10 @@ class TransferResult extends PureComponent {
     this.setState({
       txId
     });
-    console.log({
-      txId
-    });
 
-    setTimeout(() => {
-      const payload = {
-        txId
-      };
-      bridge
-        .api({
+    setTimeout(async () => {
+      try {
+        const txResult = handleResponse(await bridge.api({
           apiPath: '/api/blockChain/transactionResult', // api路径
           arguments: [
             {
@@ -139,36 +126,17 @@ class TransferResult extends PureComponent {
               value: txId
             }
           ]
-        })
-        .then(res => {
-          console.log({
-            res
-          });
-          if (+res.code !== 0) {
-            this.setState({
-              errors: res.error,
-              isModalShow: true,
-              loading: false
-            });
-            // todo: find a toast that can should multi-line
-            Toast.fail(
-              'There are some errors',
-              3
-            );
-            return;
-          }
-
-          const { Status: status, TransactionId } = res.data;
+        }));
+        const { Status: status, TransactionId, Transaction } = txResult.data;
+        if (status.toUpperCase() === 'MINED') {
           const {
             From: senderAddress,
             RefBlockNumber: blockHeight
-          } = res.data.Transaction;
-          const params = JSON.parse(res.data.Transaction.Params);
+          } = Transaction;
+          const params = JSON.parse(Transaction.Params);
           const { amount, memo, to } = params;
-
           this.setState({
             amount: +amount / TOKEN_DECIMAL,
-            // minerFee,
             receiverAddress: to,
             senderAddress,
             memo,
@@ -177,12 +145,23 @@ class TransferResult extends PureComponent {
             status,
             loading: false
           });
-        })
-        .catch(err =>
-          console.log({
-            err
-          })
-        );
+        } else if (status.toUpperCase() === 'FAILED') {
+          this.setState({
+            txId: TransactionId,
+            status,
+            loading: false
+          });
+        } else {
+          this.fetchTransactionResult();
+        }
+      } catch (e) {
+        console.error(e);
+        errorModal(e);
+        this.setState({
+          loading: false,
+          status: 'FAILED'
+        });
+      }
     }, 4000);
   }
 
@@ -191,73 +170,45 @@ class TransferResult extends PureComponent {
     history.push('/personal-center');
   }
 
-  // todo: the modal's code is repeating
   render() {
-    const { loading, status, isModalShow, errors } = this.state;
+    const { loading, status } = this.state;
     const formItems = getFormItems.call(this);
 
     return (
-      <section>
-        <WingBlank size='lg'>
-          <WhiteSpace size='lg' />
-          <Card>
-            {loading ? (
-              <PacmanLoader
-                css={override}
-                sizeUnit='px'
-                size={25}
-                color='#108ee9'
-                loading={loading}
-              />
-            ) : (
-              <Card.Body>
-                <div className='transfer-status-container'>
-                  <Icon type='check-circle' color='green' />
-                  <p className='transfer-status'>Transfer {status}</p>
-                  {/* <p className='tip-color transfer-time'>
+      <WingBlank size='lg'>
+        <WhiteSpace size='lg' />
+        <Card>
+          {loading ? (
+            <PacmanLoader
+              css={override}
+              sizeUnit='px'
+              size={25}
+              color='#108ee9'
+              loading={loading}
+            />
+          ) : (
+            <Card.Body>
+              <div className='transfer-status-container'>
+                <p className='transfer-status'>Transfer {status}</p>
+                {/* <p className='tip-color transfer-time'>
                     {new Date().toLocaleString()}
                   </p> */}
-                </div>
-                <List className='my-list'>
-                  {formItems.map(item => (
-                    <Item extra={item.value} key={item.title}>
-                      {item.title}:
-                    </Item>
-                  ))}
-                </List>
-              </Card.Body>
-            )}
-          </Card>
-          <Button type='primary' onClick={this.jump}>
-            Back
-          </Button>
-          <WhiteSpace size='lg' />
-        </WingBlank>
-        <Modal
-          visible={isModalShow}
-          transparent
-          maskClosable={false}
-          onClose={this.onCloseModal}
-          title='Failed'
-          footer={[
-            {
-              text: 'Ok',
-              onPress: () => {
-                console.log('ok');
-                this.onCloseModal();
-              }
-            }
-          ]}
-        >
-          <p>There are some error:</p>
-          {Array.isArray(errors) &&
-            errors.map(item => (
-              <p key={item.errorCode}>
-                {item.errorCode}: {item.errorMsg}
-              </p>
-            ))}
-        </Modal>
-      </section>
+              </div>
+              <List className='my-list'>
+                {formItems.map(item => (
+                  <Item extra={item.value} key={item.title}>
+                    {item.title}:
+                  </Item>
+                ))}
+              </List>
+            </Card.Body>
+          )}
+        </Card>
+        <Button type='primary' onClick={this.jump}>
+          Back
+        </Button>
+        <WhiteSpace size='lg' />
+      </WingBlank>
     );
   }
 }
