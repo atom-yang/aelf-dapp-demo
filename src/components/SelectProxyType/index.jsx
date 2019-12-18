@@ -10,13 +10,14 @@ import React, { Component } from 'react';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Modal } from 'antd-mobile';
-import AElfBridge from '../../../bridge';
-// import AElfBridge from 'aelf-bridge';
+// import AElfBridge from '../../../bridge';
+import AElfBridge from 'aelf-bridge';
 
 import { setBridge } from '../../redux/actions/common';
 
 class SelectProxyType extends Component {
   setBridgeConfig(config) {
+    // eslint-disable-next-line no-shadow
     const { setBridge } = this.props;
 
     const bridge = new AElfBridge(config);
@@ -58,13 +59,12 @@ class SelectProxyType extends Component {
 
 const mapStateToProps = state => ({ ...state.common });
 
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(
-    {
-      setBridge
-    },
-    dispatch
-  );
+const mapDispatchToProps = dispatch => bindActionCreators(
+  {
+    setBridge
+  },
+  dispatch
+);
 
 export default connect(
   mapStateToProps,

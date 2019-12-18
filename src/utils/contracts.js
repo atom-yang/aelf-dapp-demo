@@ -39,14 +39,13 @@ const contractNames = [
 
 // const chains = localStorage.getItem('chains')
 
-const privateKey =
-  '66e4918d15048730923e0decbc88e5823d394fe57e1ca1109ea713f94052705b';
+const privateKey = '66e4918d15048730923e0decbc88e5823d394fe57e1ca1109ea713f94052705b';
 
 const wallet = AElf.wallet.getWalletByPrivateKey(privateKey);
 
 export const fetchContractAdds = async (chains = []) => {
   if (localStorage.getItem('contractAdds')) {
-    return;
+    return JSON.parse(localStorage.getItem('contractAdds'));
   }
   let mainChainUrl = chains.filter(v => v.isMainChain === true);
   if (mainChainUrl.length === 0) {
@@ -63,11 +62,9 @@ export const fetchContractAdds = async (chains = []) => {
   );
 
   return Promise.all(
-    contractNames.map(item =>
-      genesisContract.GetContractAddressByName.call(
-        AElf.utils.sha256(item.name)
-      )
-    )
+    contractNames.map(item => genesisContract.GetContractAddressByName.call(
+      AElf.utils.sha256(item.name)
+    ))
   ).then(resArr => {
     contractNames.forEach((item, index) => {
       result[item.nickName] = resArr[index];
@@ -76,5 +73,4 @@ export const fetchContractAdds = async (chains = []) => {
   });
 };
 
-export const getContractAdd = contractName =>
-  JSON.parse(localStorage.getItem('contractAdds'))[contractName];
+export const getContractAdd = contractName => JSON.parse(localStorage.getItem('contractAdds'))[contractName];

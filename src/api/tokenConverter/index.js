@@ -17,8 +17,7 @@ export default class TokenConverterContract {
   static singleton = null;
 
   constructor() {
-    if (TokenConverterContract.singleton)
-      return TokenConverterContract.singleton;
+    if (TokenConverterContract.singleton) return TokenConverterContract.singleton;
     TokenConverterContract.singleton = this;
 
     this.bridge = getBridge();

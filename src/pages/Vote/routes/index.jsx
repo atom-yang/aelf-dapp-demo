@@ -14,18 +14,15 @@ import VoteCenter from '../pages/VoteCenter';
 import Vote from '../pages/Vote';
 import Redeem from '../pages/Redeem';
 
-// todo: what if write other routes inner the home route? why it cause problem?
-// todo: Redirect other route to /login
 export default (
   <Switch>
-    <Route path='/login'>
-      <Login appName='Vote' route='/vote-center'></Login>
+    <Route path="/login">
+      <Login appName="Vote" route="/vote-center" />
     </Route>
-    <Redirect from='/' to='/login' exact />
+    <Redirect from="/" to="/login" exact />
 
-    <Route path='/vote-center' component={VoteCenter} />
-    <Route path='/vote/:publicKey' component={Vote} />
-    <Route path='/redeem/:publicKey' component={Redeem} />
-    {/* <Route path='*' component={NoMatch} /> */}
+    <Route path="/vote-center" component={VoteCenter} />
+    <Route path="/vote/:publicKey" component={Vote} />
+    <Route path="/redeem/:publicKey" component={Redeem} />
   </Switch>
 );

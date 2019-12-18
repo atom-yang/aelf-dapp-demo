@@ -7,17 +7,16 @@
  * @Description: file content
  */
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { Toast } from 'antd-mobile';
-import AElfBridge from '../../../bridge';
+import SelectProxyType from '@components/SelectProxyType';
+// import AElfBridge from '../../../bridge';
 // import AElfBridge from 'aelf-bridge';
 
 import { setBridge } from '../../redux/actions/common';
-import SelectProxyType from '@components/SelectProxyType';
 
-export class Base extends Component {
+class Base extends Component {
   componentDidMount() {
     // const { setBridge } = this.props;
     // const bridge = new AElfBridge({
@@ -31,7 +30,7 @@ export class Base extends Component {
     // setBridge(bridge);
   }
 
-  async componentDidUpdate(prevProps, prevState) {
+  async componentDidUpdate(prevProps) {
     const { bridge } = this.props;
     if (bridge !== prevProps.bridge) {
       try {
@@ -84,13 +83,12 @@ Base.defaultProps = {
 
 const mapStateToProps = state => ({ ...state.common });
 
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(
-    {
-      setBridge
-    },
-    dispatch
-  );
+const mapDispatchToProps = dispatch => bindActionCreators(
+  {
+    setBridge
+  },
+  dispatch
+);
 
 export default connect(
   mapStateToProps,

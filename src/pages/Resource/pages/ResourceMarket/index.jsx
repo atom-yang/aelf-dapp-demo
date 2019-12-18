@@ -6,33 +6,34 @@
  * @LastEditTime: 2019-12-13 16:10:49
  * @Description: file content
  */
-import React, { Component } from "react";
-import PropTypes from "prop-types";
-import { connect } from "react-redux";
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import {
   InputItem,
   Button,
-  Toast,
   Modal,
-  List,
   ActivityIndicator // todo: Add Modal
-} from "antd-mobile";
-import { createForm } from "rc-form";
-import Select from "react-select";
-import { CopyToClipboard } from "react-copy-to-clipboard";
-
-import "./index.less";
-import TokenContract from "@api/token";
-import TokenConverterContract from "@api/tokenConverter";
-import { centerEllipsis, formatToken } from "@utils/formatter";
-import { TOKEN_DECIMAL } from "@constants";
-
-const { Item } = List;
+} from 'antd-mobile';
+import { createForm } from 'rc-form';
+import Select from 'react-select';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import './index.less';
+import TokenContract from '@api/token';
+import TokenConverterContract from '@api/tokenConverter';
+import { centerEllipsis, formatToken } from '@utils/formatter';
+import {
+  errorModal,
+  handleResponse
+} from '@utils/error';
+import {
+  getTxResult
+} from '@utils/bridge';
+import { TOKEN_DECIMAL } from '@constants';
 
 // 通过自定义 moneyKeyboardWrapProps 修复虚拟键盘滚动穿透问题
 // https://github.com/ant-design/ant-design-mobile/issues/307
 // https://github.com/ant-design/ant-design-mobile/issues/163
-const isIPhone = new RegExp("\\biPhone\\b|\\biPod\\b", "i").test(
+const isIPhone = new RegExp('\\biPhone\\b|\\biPod\\b', 'i').test(
   window.navigator.userAgent
 );
 let moneyKeyboardWrapProps;
@@ -42,96 +43,64 @@ if (isIPhone) {
   };
 }
 
-function getFormItems() {
-  const { copied } = this.state;
-  const { amount, txId, elf, blockHeight } = this.state.txResult;
-
-  const formItems = [
-    {
-      title: "amount",
-      value: <span className="transfer-amount">{`${amount}`}</span>,
-      isCopyable: false
-    },
-    // {
-    //   title: 'miner fee',
-    //   value: minerFee,
-    //   isCopyable: false
-    // },
-    // {
-    //   title: 'elf',
-    //   value: elf,
-    //   isCopyable: true
-    // },
-    // todo: Extract as a single component
-    {
-      title: "tx id",
-      value: (
-        <CopyToClipboard
-          text={txId}
-          onCopy={() => this.setState({ copied: true })}
-        >
-          <span>
-            {txId.slice(0, 10)}...
-            <i className={`iconfont ${copied ? "icon-duigou" : "icon-copy"}`} />
-          </span>
-        </CopyToClipboard>
-      ),
-      isCopyable: true
-    },
-    {
-      title: "block height",
-      value: blockHeight,
-      isCopyable: false
+function validateNumber(str) {
+  try {
+    const result = parseFloat(str);
+    if (!result) {
+      throw result;
     }
-  ];
-
-  return formItems;
+    return result;
+  } catch (e) {
+    errorModal(new Error('Please Input Valid Number'));
+    return false;
+  }
 }
 
-export class ResourceMarket extends Component {
+
+class ResourceMarket extends Component {
   // static propTypes = {
   //   prop: PropTypes
   // };
   constructor(props) {
     super(props);
     this.state = {
-      loading: true,
+      loading: false,
       modalVisible: false,
       address: null,
       copied: false,
       type: {
-        value: "RAM",
-        label: "RAM"
+        value: 'RAM',
+        label: 'RAM'
       },
       resourceWallet: {
         elf: {
-          symbol: "ELF",
-          balance: "-"
+          symbol: 'ELF',
+          balance: '-'
         },
         resources: [
           {
-            symbol: "RAM",
-            balance: "-"
+            symbol: 'RAM',
+            balance: '-'
           },
           {
-            symbol: "CPU",
-            balance: "-"
+            symbol: 'CPU',
+            balance: '-'
           },
           {
-            symbol: "NET",
-            balance: "-"
+            symbol: 'NET',
+            balance: '-'
           },
           {
-            symbol: "STO",
-            balance: "-"
+            symbol: 'STO',
+            balance: '-'
           }
         ]
       },
       txResult: {
-        elf: "-",
-        amount: "-",
-        txId: "-",
-        blockHeight: "-"
+        elf: '-',
+        amount: '-',
+        txId: '-',
+        blockHeight: '-'
       }
     };
 
@@ -142,162 +111,89 @@ export class ResourceMarket extends Component {
   async componentDidMount() {
     const { bridge } = this.props;
 
-    // await bridge.connect();
-
-    const res = await bridge.account();
-    console.log({
-      res
-    });
-    // todo: Use a block to block the response from bridge
-    const { address } = res.data.accounts[0];
-    this.setState({
-      address
-    });
-
-    await this.getAllBalances();
+    try {
+      const res = handleResponse(await bridge.account());
+      // todo: Use a block to block the response from bridge
+      const { address } = res.data.accounts[0];
+      this.setState({
+        address
+      });
+      await this.getAllBalances();
+    } catch (e) {
+      errorModal(e);
+      console.error('resource mounted', e);
+    }
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate(prevProps) {
     const { bridge } = this.props;
-
-    console.log({
-      bridge
-    });
 
     if (bridge !== prevProps.bridge) {
       this.getAllBalances();
     }
   }
 
-  displayModal() {
+  async onResourceBuy() {
+    const { form } = this.props;
+    const { getFieldValue } = form;
+    const buyNum = validateNumber(getFieldValue('buyNum'));
+    if (!buyNum) return;
     this.setState({
-      modalVisible: true
+      loading: true
     });
+    await this.buyResource(buyNum);
   }
 
-  fetchTxResult(txId) {
-    const { bridge } = this.props;
+  async onResourceSell() {
+    const { form } = this.props;
+    const { getFieldValue } = form;
 
-    setTimeout(() => {
-      const payload = {
-        txId
-      };
-      bridge
-        .api({
-          apiPath: "/api/blockChain/transactionResult", // api路径
-          arguments: [
-            {
-              name: "transactionResult",
-              value: txId
-            }
-          ]
-        })
-        .then(res => {
-          console.log({
-            res
-          });
-          this.setState({
-            loading: false
-          });
-          this.getAllBalances();
-          if (res.code !== 0) {
-            this.setState({
-              errors: res.error,
-              isModalShow: true,
-              loading: false
-            });
-            // todo: find a toast that can should multi-line
-            // Toast.fail(
-            //   `There are some errors:
-            //     ${errors}`,
-            //   3
-            // );
-            return;
-          }
-
-          console.log({
-            res
-          });
-
-          const { Status: status, TransactionId } = res.data;
-          const { RefBlockNumber: blockHeight } = res.data.Transaction;
-          const params = JSON.parse(res.data.Transaction.Params);
-          const { amount, symbol } = params;
-
-          this.setState({
-            txResult: {
-              amount: +amount / TOKEN_DECIMAL,
-              // elf: 123,
-              txId: TransactionId,
-              blockHeight,
-              status,
-              loading: false
-            }
-          });
-
-          console.log("I'm success");
-        })
-        .catch(err => {
-          this.getAllBalances();
-          this.setState({
-            loading: false
-          });
-          console.log({
-            err
-          });
-        });
-    }, 4000);
+    const sellNum = validateNumber(getFieldValue('sellNum'));
+    if (!sellNum) return;
+    this.setState({
+      loading: true
+    });
+    await this.sellResource(sellNum);
   }
 
-  onResourceBuy() {
-    const { getFieldProps } = this.props.form;
+  getFormItems() {
+    const { copied, txResult } = this.state;
+    const {
+      amount,
+      txId,
+      blockHeight
+    } = txResult;
 
-    const buyNumField = getFieldProps("buyNum");
-    this.buyResource(+buyNumField.value);
-  }
+    const formItems = [
+      {
+        title: 'amount',
+        value: <span className="transfer-amount">{`${amount}`}</span>,
+        isCopyable: false
+      },
+      {
+        title: 'tx id',
+        value: (
+          <CopyToClipboard
+            text={txId}
+            onCopy={() => this.setState({ copied: true })}
+          >
+            <span>
+              {txId.slice(0, 10)}
+              ...
+              <i className={`iconfont ${copied ? 'icon-duigou' : 'icon-copy'}`} />
+            </span>
+          </CopyToClipboard>
+        ),
+        isCopyable: true
+      },
+      {
+        title: 'block height',
+        value: blockHeight,
+        isCopyable: false
+      }
+    ];
 
-  async buyResource(buyNum) {
-    const tokenConverterContract = new TokenConverterContract();
-    const { type } = this.state;
-
-    try {
-      const res = await tokenConverterContract.buy({
-        symbol: type.value,
-        amount: buyNum * TOKEN_DECIMAL
-      });
-      await this.fetchTxResult(res.data.TransactionId);
-      await this.displayModal();
-
-      console.log("buy", { buyNum, res });
-    } catch (err) {
-      console.log("buy", err);
-    }
-  }
-
-  onResourceSell() {
-    const { getFieldProps } = this.props.form;
-
-    const sellNumField = getFieldProps("sellNum");
-    this.sellResource(+sellNumField.value);
-  }
-
-  async sellResource(sellNum) {
-    const tokenConverterContract = new TokenConverterContract();
-    const { type } = this.state;
-
-    try {
-      const res = await tokenConverterContract.sell({
-        symbol: type.value,
-        amount: sellNum * TOKEN_DECIMAL
-      });
-
-      await this.fetchTxResult(res.data.TransactionId);
-      await this.displayModal();
-
-      console.log("sellResource", res);
-    } catch (err) {
-      console.log("sellResource", err);
-    }
+    return formItems;
   }
 
   async getAllBalances() {
@@ -308,18 +204,18 @@ export class ResourceMarket extends Component {
 
     try {
       const resArr = await Promise.all(
-        allTokens.map(item => {
-          return tokenContract.fetchBalance({
-            symbol: item.symbol,
-            owner: address
-          });
-        })
+        allTokens.map(item => tokenContract.fetchBalance({
+          symbol: item.symbol,
+          owner: address
+        }))
       );
-      console.log("getAllBalances", resArr);
-
       const processedArr = resArr.map(item => {
-        item.data.balance /= TOKEN_DECIMAL;
-        return item.data;
+        const { balance, symbol, owner } = item.data;
+        return {
+          balance: balance / TOKEN_DECIMAL,
+          symbol,
+          owner
+        };
       });
       this.setState({
         resourceWallet: {
@@ -328,20 +224,102 @@ export class ResourceMarket extends Component {
         }
       });
     } catch (err) {
-      console.log("getAllBalances", err);
+      errorModal(err);
+      console.error('getAllBalances', err);
     }
   }
 
   handleChange = type => {
     this.setState({ type });
-    console.log(`Option selected:`, type);
   };
 
-  render() {
-    const { getFieldProps } = this.props.form;
-    const { resourceWallet, address, modalVisible, type, loading } = this.state;
+  async sellResource(sellNum) {
+    const tokenConverterContract = new TokenConverterContract();
+    const { type } = this.state;
 
-    const formItems = getFormItems.call(this);
+    try {
+      const res = handleResponse(await tokenConverterContract.sell({
+        symbol: type.value,
+        amount: sellNum * TOKEN_DECIMAL
+      }));
+
+      await this.fetchTxResult(res.data.TransactionId);
+      this.displayModal();
+    } catch (err) {
+      errorModal(err);
+      console.error('sellResource', err);
+    }
+  }
+
+  async buyResource(buyNum) {
+    const tokenConverterContract = new TokenConverterContract();
+    const { type } = this.state;
+
+    try {
+      const res = handleResponse(await tokenConverterContract.buy({
+        symbol: type.value,
+        amount: buyNum * TOKEN_DECIMAL
+      }));
+      await this.fetchTxResult(res.data.TransactionId);
+      this.displayModal();
+
+      console.log('buy', { buyNum, res });
+    } catch (err) {
+      errorModal(err);
+      console.error('buy', err);
+    }
+  }
+
+  fetchTxResult(txId) {
+    const { bridge } = this.props;
+
+    new Promise((resolve, reject) => {
+      getTxResult(bridge, txId, resolve, reject);
+    }).then(transaction => {
+      this.setState({
+        loading: false
+      });
+      this.getAllBalances();
+
+      const { Status: status, TransactionId, Transaction } = transaction;
+      const { RefBlockNumber: blockHeight } = Transaction;
+      const params = JSON.parse(Transaction.Params);
+      const { amount } = params;
+
+      this.setState({
+        txResult: {
+          amount: +amount / TOKEN_DECIMAL,
+          txId: TransactionId,
+          blockHeight,
+          status
+        },
+        loading: false
+      });
+    }).catch(err => {
+      this.getAllBalances();
+      this.setState({
+        loading: false
+      });
+      errorModal(err);
+    });
+  }
+
+  displayModal() {
+    this.setState({
+      modalVisible: true
+    });
+  }
+
+  render() {
+    const { form } = this.props;
+    const { getFieldProps } = form;
+    const {
+      resourceWallet,
+      address,
+      modalVisible,
+      type,
+      loading
+    } = this.state;
 
     const options = resourceWallet.resources.map(item => ({
       value: item.symbol,
@@ -355,13 +333,17 @@ export class ResourceMarket extends Component {
             {address && centerEllipsis(address)}
           </div>
           <div className="wallet-balance">
-            Balance: {formatToken(resourceWallet.elf.balance)}
+            Balance:
+            {' '}
+            {formatToken(resourceWallet.elf.balance)}
           </div>
           <ul className="resource-item-group">
             {resourceWallet.resources.map(item => (
-              <li key={item.symbol} className="resource-item">{`${
-                item.symbol
-              }: ${formatToken(item.balance)}`}</li>
+              <li key={item.symbol} className="resource-item">
+                {`${
+                  item.symbol
+                }: ${formatToken(item.balance)}`}
+              </li>
             ))}
           </ul>
         </div>
@@ -376,23 +358,19 @@ export class ResourceMarket extends Component {
           <div className="resource-buy">
             <div className="trading-box-header buy-header">Buy</div>
             <InputItem
-              {...getFieldProps("buyNum", {
+              {...getFieldProps('buyNum', {
                 normalize: (v, prev) => {
                   if (v && !/^(([1-9]\d*)|0)(\.\d{0,2}?)?$/.test(v)) {
-                    if (v === ".") {
-                      return "0.";
+                    if (v === '.') {
+                      return '0.';
                     }
                     return prev;
                   }
                   return v;
                 }
               })}
-              symbol={"money"}
+              symbol="money"
               placeholder="input number"
-              ref={el => (this.inputRef = el)}
-              onVirtualKeyboardConfirm={v =>
-                console.log("onVirtualKeyboardConfirm:", v)
-              }
               clear
               moneyKeyboardWrapProps={moneyKeyboardWrapProps}
             >
@@ -401,6 +379,7 @@ export class ResourceMarket extends Component {
             <Button
               className="trading-btn buy-btn"
               size="small"
+              loading={loading}
               onClick={this.onResourceBuy}
             >
               Buy
@@ -409,23 +388,19 @@ export class ResourceMarket extends Component {
           <div className="resource-sell">
             <div className="trading-box-header sell-header">Sell</div>
             <InputItem
-              {...getFieldProps("sellNum", {
+              {...getFieldProps('sellNum', {
                 normalize: (v, prev) => {
                   if (v && !/^(([1-9]\d*)|0)(\.\d{0,2}?)?$/.test(v)) {
-                    if (v === ".") {
-                      return "0.";
+                    if (v === '.') {
+                      return '0.';
                     }
                     return prev;
                   }
                   return v;
                 }
               })}
-              symbol={"money"}
+              symbol="money"
               placeholder="input number"
-              ref={el => (this.inputRef = el)}
-              onVirtualKeyboardConfirm={v =>
-                console.log("onVirtualKeyboardConfirm:", v)
-              }
               clear
               moneyKeyboardWrapProps={moneyKeyboardWrapProps}
             >
@@ -434,6 +409,7 @@ export class ResourceMarket extends Component {
             <Button
               className="trading-btn sell-btn"
               size="small"
+              loading={loading}
               onClick={this.onResourceSell}
             >
               Sell
@@ -447,7 +423,7 @@ export class ResourceMarket extends Component {
             this.setState({
               modalVisible: false,
               copied: false,
-              loading: true
+              loading: false
             });
           }}
           closable
@@ -458,9 +434,13 @@ export class ResourceMarket extends Component {
             <ActivityIndicator animating={loading} />
           ) : (
             <ul>
-              {formItems.map(item => (
+              {this.getFormItems().map(item => (
                 <li key={item.title}>
-                  <span className="item-label">{item.title}: </span>
+                  <span className="item-label">
+                    {item.title}
+                    :
+                    {' '}
+                  </span>
                   <span className="item-value">{item.value}</span>
                 </li>
               ))}

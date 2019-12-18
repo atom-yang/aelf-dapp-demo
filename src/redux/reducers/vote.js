@@ -13,7 +13,6 @@ const initialState = {
 };
 
 const vote = (state = initialState, { type, payload }) => {
-  console.log('<<<reducers');
   switch (type) {
     case actionTypes.SET_USER_VOTES:
       return { ...state, userVotes: payload.userVotes };

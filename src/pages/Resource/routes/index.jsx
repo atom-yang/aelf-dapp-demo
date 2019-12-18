@@ -17,12 +17,12 @@ import ResourceMarket from '../pages/ResourceMarket';
 // todo: what if write other routes inner the home route? why it cause problem?
 export default (
   <Switch>
-    <Route path='/login'>
-      <Login appName='Resource' route='/resource-trading'></Login>
+    <Route path="/login">
+      <Login appName="Resource" route="/resource-trading" />
     </Route>
-    <Redirect from='/' to='/login' exact />
+    <Redirect from="/" to="/login" exact />
 
-    <Route path='/resource-trading' component={ResourceMarket} />
+    <Route path="/resource-trading" component={ResourceMarket} />
     {/* <Route path='/transfer' component={Transfer} /> */}
     {/* <Route path='/transfer-result/:txId' component={TransferResult} /> */}
     {/* <Route path='*' component={NoMatch} /> */}

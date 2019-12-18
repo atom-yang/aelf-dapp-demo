@@ -22,3 +22,8 @@
 .am-card {
   margin-bottom: 100px;
 }
+
+.transfer-result-loading {
+  display: block;
+  margin: 30px auto;
+}

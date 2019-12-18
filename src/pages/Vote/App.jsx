@@ -11,15 +11,15 @@ import { HashRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import 'antd-mobile/dist/antd-mobile.css';
 
-import routes from './routes';
 import store from '@redux/store';
 import Base from '@components/Base';
+import routes from './routes';
 // import './App.css';
 import '@style/common.less';
 
 function App() {
   return (
-    <div className='App'>
+    <div className="App">
       <Provider store={store}>
         <Base>
           <HashRouter>{routes}</HashRouter>

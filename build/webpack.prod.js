@@ -39,16 +39,6 @@ const prodConfig = {
     occurrenceOrder: true,
     sideEffects: true,
     minimizer: [
-      // new UglifyJsPlugin({
-      //   cache: true,
-      //   parallel: true,
-      //   uglifyOptions: {
-      //     compress: {
-      //       drop_debugger: true,
-      //       drop_console: true
-      //     }
-      //   }
-      // }),
       new TerserPlugin({
         cache: true,
         parallel: true,

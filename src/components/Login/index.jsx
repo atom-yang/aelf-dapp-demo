@@ -7,19 +7,19 @@
  * @Description: file content
  */
 
-import React, { PureComponent } from "react";
-import { withRouter } from "react-router-dom";
-import { compose, bindActionCreators } from "redux";
-import { connect } from "react-redux";
-import { Button, Modal } from "antd-mobile";
-import "./index.less";
-import { fetchContractAdds } from "@utils/contracts";
+import React, { PureComponent } from 'react';
+import { withRouter } from 'react-router-dom';
+import { compose, bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
+import { Button, Modal } from 'antd-mobile';
+import './index.less';
+import { fetchContractAdds } from '@utils/contracts';
+import TokenContract from '@api/token';
+import { setBalance } from '@redux/actions/common';
 import { errorModal, handleResponse } from '../../utils/error';
-import TokenContract from "@api/token";
-import { setBalance } from "@redux/actions/common";
-import { SYMBOL, TOKEN_DECIMAL } from "@constants";
+import { SYMBOL, TOKEN_DECIMAL } from '@constants';
 
-const clsPrefix = "login";
+const clsPrefix = 'login';
 
 class Login extends PureComponent {
   constructor(props) {
@@ -41,7 +41,12 @@ class Login extends PureComponent {
   }
 
   async login() {
-    const { history, route, bridge, setBalance } = this.props;
+    const {
+      history,
+      route,
+      bridge,
+      setBalance: setBalanceProp
+    } = this.props;
 
     this.setState({
       loading: true
@@ -50,15 +55,15 @@ class Login extends PureComponent {
       const res = handleResponse(await bridge.account());
       const { chains, accounts } = res.data;
       const { address, publicKey } = accounts[0];
-      localStorage.setItem("address", address);
-      localStorage.setItem("publicKey", publicKey);
+      localStorage.setItem('address', address);
+      localStorage.setItem('publicKey', publicKey);
       await fetchContractAdds(chains);
       const tokenContract = new TokenContract();
       const balance = handleResponse(await tokenContract.fetchBalance({
         symbol: SYMBOL,
         owner: address
       }));
-      setBalance(balance.data.balance / TOKEN_DECIMAL);
+      setBalanceProp(balance.data.balance / TOKEN_DECIMAL);
       setTimeout(() => {
         history.push(route);
       });
@@ -81,8 +86,13 @@ class Login extends PureComponent {
       <section
         className={`${clsPrefix}-container full-page-container center-container`}
       >
-        <h1 className="dapp-name">AElf {appName} Demo</h1>
-        <div style={{ display: "block", width: "80%" }}>
+        <h1 className="dapp-name">
+          AElf
+          {appName}
+          {' '}
+          Demo
+        </h1>
+        <div style={{ display: 'block', width: '80%' }}>
           <Button
             type="primary"
             style={{ borderRadius: 20 }}
@@ -100,19 +110,21 @@ class Login extends PureComponent {
           title="Failed"
           footer={[
             {
-              text: "Ok",
+              text: 'Ok',
               onPress: () => {
-                console.log("ok");
+                console.log('ok');
                 this.onCloseModal();
               }
             }
           ]}
         >
           <p>There are some error:</p>
-          {Array.isArray(errors) &&
-            errors.map(item => (
+          {Array.isArray(errors)
+            && errors.map(item => (
               <p key={item.errorCode}>
-                {item.errorCode}: {item.errorMsg}
+                {item.errorCode}
+:
+                {item.errorMsg}
               </p>
             ))}
         </Modal>
@@ -126,13 +138,12 @@ const mapStateToProps = state => ({
 });
 
 // todo: Snippet
-const mapDispatchToProps = dispatch =>
-  bindActionCreators(
-    {
-      setBalance
-    },
-    dispatch
-  );
+const mapDispatchToProps = dispatch => bindActionCreators(
+  {
+    setBalance
+  },
+  dispatch
+);
 
 const wrapper = compose(
   withRouter,

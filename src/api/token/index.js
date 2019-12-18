@@ -41,7 +41,9 @@ export default class TokenContract {
     });
   }
 
-  transfer({ to, symbol, amount, memo }) {
+  transfer({
+    to, symbol, amount, memo
+  }) {
     return this.bridge.invoke({
       contractAddress: this.tokenContractAdd, // 合约地址
       contractMethod: 'Transfer', // 合约方法名

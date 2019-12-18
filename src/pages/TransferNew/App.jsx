@@ -3,16 +3,16 @@ import { HashRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import 'antd-mobile/dist/antd-mobile.css';
 
+import Base from '@components/Base';
 import routes from './routes';
 import store from '../../redux/store';
-import Base from '@components/Base';
 import './App.css';
 import '@style/common.less';
 import 'minireset.css';
 
 function App() {
   return (
-    <div className='App'>
+    <div className="App">
       <Provider store={store}>
         <Base>
           <HashRouter>{routes}</HashRouter>

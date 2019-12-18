@@ -16,9 +16,7 @@
     "react",
     "babel",
     "import",
-    "jsx-a11y",
-    "prettier",
-    "prettier/react"
+    "jsx-a11y"
   ],
   "extends": [
     "eslint-config-airbnb"
@@ -40,6 +38,14 @@
     "no-mixed-operators": "off",
     "max-len": ["error", { "code": 120}],
     "class-methods-use-this": "off",
-    "no-plusplus": "off"
+    "no-plusplus": "off",
+    "react/prop-types": "warn"
+  },
+  "settings": {
+    "import/resolver": {
+      "webpack": {
+        "config": "./build/webpack.base.js"
+      }
+    }
   }
 }

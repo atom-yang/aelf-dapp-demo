@@ -1,16 +1,8 @@
-/*
- * @Author: Alfred Yang
- * @Github: https://github.com/cat-walk
- * @Date: 2019-10-14 16:45:14
- * @LastEditors: Alfred Yang
- * @LastEditTime: 2019-11-11 20:06:31
- * @Description: file content
- */
 import React, { PureComponent } from 'react';
 import { withRouter } from 'react-router-dom';
 import { compose } from 'redux';
 import { connect } from 'react-redux';
-import { Button, Toast, Modal } from 'antd-mobile';
+import { Button } from 'antd-mobile';
 
 // todo: why is the less didn't work?
 import { centerEllipsis, formatToken } from '@utils/formatter';
@@ -41,20 +33,20 @@ class PersonalCenter extends PureComponent {
       <section
         className={`${clsPrefix}-container full-page-container center-container`}
       >
-        <div className='account-name-container'>
-          <span className='account-name'>
+        <div className="account-name-container">
+          <span className="account-name">
             {this.address && centerEllipsis(this.address)}
           </span>
         </div>
-        <div className='account-balance-container'>
-          <span className='account-balance-words'>Balance: </span>
-          <span className='account-balance-value'>
+        <div className="account-balance-container">
+          <span className="account-balance-words">Balance: </span>
+          <span className="account-balance-value">
             {balance && formatToken(balance)}
           </span>
           <span>{SYMBOL}</span>
         </div>
-        <div className='transfer-btn-container'>
-          <Button type='primary' inline onClick={this.jumpToTransfer}>
+        <div className="transfer-btn-container">
+          <Button type="primary" inline onClick={this.jumpToTransfer}>
             Transfer
           </Button>
         </div>
@@ -67,20 +59,10 @@ const mapStateToProps = state => ({
   ...state.common
 });
 
-// todo: Snippet
-// const mapDispatchToProps = dispatch =>
-//   bindActionCreators(
-//     {
-//       setBalance
-//     },
-//     dispatch
-//   );
-
 const wrapper = compose(
   withRouter,
   connect(
     mapStateToProps
-    // mapDispatchToProps
   )
 );
 

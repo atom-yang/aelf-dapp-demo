@@ -7,92 +7,39 @@
  * @Description: file content
  */
 import React, { PureComponent } from 'react';
-import { withRouter } from 'react-router-dom';
-import { compose } from 'redux';
+import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import {
   Card,
   WingBlank,
   WhiteSpace,
   List,
-  Icon,
   Button,
-  Toast
+  ActivityIndicator
 } from 'antd-mobile';
-import { PacmanLoader } from 'react-spinners';
-import { css } from '@emotion/core';
 import { SYMBOL, TOKEN_DECIMAL } from '@constants';
 import {
-  errorModal,
-  handleResponse
+  errorModal
 } from '../../../../utils/error';
+import {
+  getTxResult
+} from '../../../../utils/bridge';
 import './index.css';
 
 const { Item } = List;
 
-const override = css`
-  display: block;
-  margin: 30px auto;
-`;
-
-function getFormItems() {
-  const {
-    amount,
-    // minerFee,
-    receiverAddress,
-    senderAddress,
-    memo,
-    txId,
-    blockHeight
-  } = this.state;
-
-  const formItems = [
-    {
-      title: 'amount',
-      value: <span className='transfer-amount'>{`${amount} ${SYMBOL}`}</span>,
-      isCopyable: false
-    },
-    // {
-    //   title: 'miner fee',
-    //   value: minerFee,
-    //   isCopyable: false
-    // },
-    {
-      title: 'receiver address',
-      value: receiverAddress,
-      isCopyable: true
-    },
-    {
-      title: 'sender address',
-      value: senderAddress,
-      isCopyable: true
-    },
-    {
-      title: 'memo',
-      value: memo,
-      isCopyable: false
-    },
-    {
-      title: 'tx id',
-      value: txId,
-      isCopyable: true
-    },
-    {
-      title: 'block height',
-      value: blockHeight,
-      isCopyable: false
-    }
-  ];
-
-  return formItems;
-}
-
 class TransferResult extends PureComponent {
+  static propTypes = {
+    // eslint-disable-next-line react/forbid-prop-types
+    bridge: PropTypes.object.isRequired,
+    // eslint-disable-next-line react/forbid-prop-types
+    match: PropTypes.object.isRequired
+  };
+
   constructor(props) {
     super(props);
     this.state = {
       amount: null,
-      minerFee: null,
       receiverAddress: null,
       senderAddress: null,
       memo: null,
@@ -101,113 +48,134 @@ class TransferResult extends PureComponent {
       loading: true,
       status: null
     };
-
-    this.jump = this.jump.bind(this);
   }
 
   componentDidMount() {
     this.fetchTransactionResult();
   }
 
+  getFormItems() {
+    const {
+      amount,
+      receiverAddress,
+      senderAddress,
+      memo,
+      txId,
+      blockHeight
+    } = this.state;
+
+    const formItems = [
+      {
+        title: 'amount',
+        value: <span className="transfer-amount">{`${amount} ${SYMBOL}`}</span>,
+        isCopyable: false
+      },
+      {
+        title: 'receiver address',
+        value: receiverAddress,
+        isCopyable: true
+      },
+      {
+        title: 'sender address',
+        value: senderAddress,
+        isCopyable: true
+      },
+      {
+        title: 'memo',
+        value: memo,
+        isCopyable: false
+      },
+      {
+        title: 'tx id',
+        value: txId,
+        isCopyable: true
+      },
+      {
+        title: 'block height',
+        value: blockHeight,
+        isCopyable: false
+      }
+    ];
+
+    return formItems;
+  }
+
   fetchTransactionResult() {
-    const { txId } = this.props.match.params;
-    const { bridge } = this.props;
+    const { bridge, match } = this.props;
+    const { txId } = match.params;
     this.setState({
       txId
     });
 
-    setTimeout(async () => {
-      try {
-        const txResult = handleResponse(await bridge.api({
-          apiPath: '/api/blockChain/transactionResult', // api路径
-          arguments: [
-            {
-              name: 'transactionResult',
-              value: txId
-            }
-          ]
-        }));
-        const { Status: status, TransactionId, Transaction } = txResult.data;
-        if (status.toUpperCase() === 'MINED') {
-          const {
-            From: senderAddress,
-            RefBlockNumber: blockHeight
-          } = Transaction;
-          const params = JSON.parse(Transaction.Params);
-          const { amount, memo, to } = params;
-          this.setState({
-            amount: +amount / TOKEN_DECIMAL,
-            receiverAddress: to,
-            senderAddress,
-            memo,
-            txId: TransactionId,
-            blockHeight,
-            status,
-            loading: false
-          });
-        } else if (status.toUpperCase() === 'FAILED') {
-          this.setState({
-            txId: TransactionId,
-            status,
-            loading: false
-          });
-        } else {
-          this.fetchTransactionResult();
-        }
-      } catch (e) {
-        console.error(e);
-        errorModal(e);
-        this.setState({
-          loading: false,
-          status: 'FAILED'
-        });
-      }
-    }, 4000);
-  }
-
-  jump() {
-    const { history } = this.props;
-    history.push('/personal-center');
+    new Promise((resolve, reject) => {
+      getTxResult(bridge, txId, resolve, reject);
+    }).then(transaction => {
+      const { Status: status, TransactionId, Transaction } = transaction;
+      const {
+        From: senderAddress,
+        RefBlockNumber: blockHeight
+      } = Transaction;
+      const params = JSON.parse(Transaction.Params);
+      const { amount, memo, to } = params;
+      this.setState({
+        amount: +amount / TOKEN_DECIMAL,
+        receiverAddress: to,
+        senderAddress,
+        memo,
+        txId: TransactionId,
+        blockHeight,
+        status,
+        loading: false
+      });
+    }).catch(err => {
+      this.setState({
+        status: 'FAILED',
+        loading: false
+      });
+      errorModal(err);
+    });
   }
 
   render() {
     const { loading, status } = this.state;
-    const formItems = getFormItems.call(this);
+    const formItems = this.getFormItems();
 
     return (
-      <WingBlank size='lg'>
-        <WhiteSpace size='lg' />
+      <WingBlank size="lg">
+        <WhiteSpace size="lg" />
         <Card>
           {loading ? (
-            <PacmanLoader
-              css={override}
-              sizeUnit='px'
-              size={25}
-              color='#108ee9'
-              loading={loading}
+            <ActivityIndicator
+              className="transfer-result-loading"
+              animating
+              text="Loading..."
             />
           ) : (
             <Card.Body>
-              <div className='transfer-status-container'>
-                <p className='transfer-status'>Transfer {status}</p>
-                {/* <p className='tip-color transfer-time'>
-                    {new Date().toLocaleString()}
-                  </p> */}
+              <div className="transfer-status-container">
+                <p className="transfer-status">
+                  Transfer
+                  {status}
+                </p>
               </div>
-              <List className='my-list'>
+              <List className="my-list">
                 {formItems.map(item => (
                   <Item extra={item.value} key={item.title}>
-                    {item.title}:
+                    {item.title}
+                    :
                   </Item>
                 ))}
               </List>
             </Card.Body>
           )}
         </Card>
-        <Button type='primary' onClick={this.jump}>
+        <Button
+          type="primary"
+          href="#/personal-center"
+        >
           Back
         </Button>
-        <WhiteSpace size='lg' />
+        <WhiteSpace size="lg" />
       </WingBlank>
     );
   }
@@ -217,9 +185,4 @@ const mapStateToProps = state => ({
   ...state.common
 });
 
-const wrapper = compose(
-  withRouter,
-  connect(mapStateToProps)
-);
-
-export default wrapper(TransferResult);
+export default connect(mapStateToProps)(TransferResult);

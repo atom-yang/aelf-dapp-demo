@@ -8,13 +8,10 @@
  */
 import moment from 'moment';
 
-export const computeRedeemableVoteRecords = records => {
-  return records.filter(item => item.unlockTimestamp.seconds < moment().unix());
-};
+// eslint-disable-next-line max-len
+export const computeRedeemableVoteRecords = records => records.filter(item => item.unlockTimestamp.seconds < moment().unix());
 
 export const getFormatedLockTime = vote => {
-  // debugger
-  console.log('vote', vote);
   const start = moment.unix(vote.voteTimestamp.seconds);
   const end = moment.unix(vote.unlockTimestamp.seconds);
   const formatedLockTime = end.from(start, true);

@@ -6,32 +6,21 @@
  * @LastEditTime: 2019-12-13 16:06:46
  * @Description: file content
  */
-import React, { PureComponent } from "react";
-import { withRouter } from "react-router-dom";
-import { List, InputItem, Button, Toast, Modal } from "antd-mobile";
-import { createForm } from "rc-form";
-import { SYMBOL, TOKEN_DECIMAL } from "@constants";
+import React, { PureComponent } from 'react';
+import { withRouter } from 'react-router-dom';
+import {
+  List, InputItem, Button
+} from 'antd-mobile';
+import { createForm } from 'rc-form';
+import TokenContract from '@api/token';
+import { SYMBOL, TOKEN_DECIMAL } from '@constants';
 import {
   errorModal,
   handleResponse
 } from '../../../../utils/error';
-import "./index.css";
-import TokenContract from "@api/token";
+import './index.css';
 
-// 通过自定义 moneyKeyboardWrapProps 修复虚拟键盘滚动穿透问题
-// https://github.com/ant-design/ant-design-mobile/issues/307
-// https://github.com/ant-design/ant-design-mobile/issues/163
-const isIPhone = new RegExp("\\biPhone\\b|\\biPod\\b", "i").test(
-  window.navigator.userAgent
-);
-let moneyKeyboardWrapProps;
-if (isIPhone) {
-  moneyKeyboardWrapProps = {
-    onTouchStart: e => e.preventDefault()
-  };
-}
-
-const clsPrefix = "transfer";
+const clsPrefix = 'transfer';
 const LABEL_NUM = 6;
 
 class Transfer extends PureComponent {
@@ -73,7 +62,7 @@ class Transfer extends PureComponent {
       history.push(`/transfer-result/${res.data.TransactionId}`);
     } catch (e) {
       errorModal(e);
-      console.error("transfer", e);
+      console.error('transfer', e);
       this.setState({
         loading: false
       });
@@ -81,9 +70,11 @@ class Transfer extends PureComponent {
   }
 
   render() {
+    const { form } = this.props;
     const {
       getFieldDecorator
-    } = this.props.form;
+    } = form;
+    const { loading } = this.state;
 
     return (
       <section
@@ -151,7 +142,7 @@ class Transfer extends PureComponent {
             type="primary"
             inline
             onClick={this.jumpToTransferResult}
-            loading={this.state.loading}
+            loading={loading}
           >
             Next
           </Button>
