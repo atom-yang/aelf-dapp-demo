@@ -167,9 +167,14 @@ class Redeem extends Component {
     new Promise((resolve, reject) => {
       getTxResult(bridge, txId, resolve, reject);
     }).then(transaction => {
-      const { Status: status, TransactionId, Transaction } = transaction;
-      const { RefBlockNumber: blockHeight } = Transaction;
-      const params = JSON.parse(Transaction.Params);
+      const {
+        Status: status,
+        TransactionId,
+        Transaction,
+        BlockNumber: blockHeight
+      } = transaction;
+      const { Params } = Transaction;
+      const params = JSON.parse(Params);
       const { candidatePubkey, endTimestamp } = params;
       this.setState({
         txResult: {

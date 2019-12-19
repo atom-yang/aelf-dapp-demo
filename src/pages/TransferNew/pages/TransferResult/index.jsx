@@ -110,10 +110,14 @@ class TransferResult extends PureComponent {
     new Promise((resolve, reject) => {
       getTxResult(bridge, txId, resolve, reject);
     }).then(transaction => {
-      const { Status: status, TransactionId, Transaction } = transaction;
       const {
-        From: senderAddress,
-        RefBlockNumber: blockHeight
+        Status: status,
+        TransactionId,
+        Transaction,
+        BlockNumber: blockHeight
+      } = transaction;
+      const {
+        From: senderAddress
       } = Transaction;
       const params = JSON.parse(Transaction.Params);
       const { amount, memo, to } = params;
