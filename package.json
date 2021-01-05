@@ -30,7 +30,7 @@
     "aelf-bridge": "^0.0.8",
     "aelf-sdk": "3.2.23",
     "antd-mobile": "^2.3.1",
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "classnames": "^2.2.6",
     "cookie": "^0.4.0",
     "core-js": "^2",
